@@ -79,7 +79,6 @@ retry:
         case ')': {
             return RP;
 
-        (略)
         case EOF: {
             return EOF;
         }
