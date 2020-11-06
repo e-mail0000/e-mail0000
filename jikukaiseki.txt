@@ -1,0 +1,103 @@
+﻿#include "keyword.h"
+#include "scantest.h"
+extern struct OPE *in_word_set(char*, unsigned int);
+
+FILE *yyin = NULL;
+char *yytext;
+static void addText(char c) {
+    if (ytp == (yt_max - 1)) {
+        yt_max += BUFSIZE;
+        yytext = (char*)realloc(yytext, yt_max);
+    }
+    yytext[ytp++] = c;
+    yytext[ytp] = 0;
+}
+
+int yylex() {
+    char c;
+    ytp = 0;    
+
+retry:
+    switch(c = read()) {
+        case '#': { // (1) skip comment
+            while ((c = read()) != '\n');
+            goto retry;
+        }
+        case ' ':
+        case '\t': { // (2)skip space and tab
+            goto retry;
+        }
+        case '\n': { // (3)ignore return and count the number
+            goto retry;
+        }
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':            
+        case '5':
+        case '6':            
+        case '7':
+        case '8':                        
+        case '9': {
+            addText(c);
+            while(isdigit(c = read())) {  // (4)数字である限り読み込む
+                addText(c);
+            }
+            if (c == '.') {               // (5) double value
+                addText(c);
+                uint8_t dbl_flg = 0;
+                while(isdigit(c = read())) {　//(6) 少数点以下を読み込む
+                    dbl_flg = 1;
+                    addText(c);
+                }
+                if (dbl_flg) {           // (7)xx.yyのような正しい形
+                    pushback();                    
+                    double d_value;
+                    sscanf(yytext, "%lf", &d_value);
+                    yylval.dv = d_value;
+                    return DOUBLE_LITERAL;                    
+                } else {                // xx.で終わるようなエラー
+                    fprintf(stderr, "double error\n");
+                    exit(1);
+                }                
+            } else {  // int value
+                pushback();
+                int i_value;
+                sscanf(yytext, "%d", &i_value);
+                yylval.iv = i_value;
+                return INT_LITERAL;
+            }            
+            break;
+        }
+        case ';': {
+            return SEMICOLON;
+        }
+        case '(': {
+            return LP;
+        }
+        case ')': {
+            return RP;
+
+        (略)
+        case EOF: {
+            return EOF;
+        }
+        default: {
+            break;
+        }
+    }
+
+    while (is_identchar(c)) {  (8)数字でも文法記号でもない文字列(関数や変数名など)
+        addText(c);
+        c = read();
+    }
+    pushback();    
+    struct OPE *op = in_word_set(yytext, strlen(yytext));  // (9)予約語か否かの判定
+    if (op != NULL) {
+        return op->type;
+    } 
+
+    yylval.name = yytext;　  // (10)予約語ではない場合，文字列をyylval.nameにセット
+    return IDENTIFIER;
+}
