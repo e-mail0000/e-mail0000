@@ -1,1 +1,4 @@
-﻿EditTest
+EditTest
+#test
+My first time was GitHub
+:coffee: :pizza: :dancer:
