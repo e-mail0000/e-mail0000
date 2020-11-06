@@ -1,0 +1,15 @@
+﻿int calc(int n) {
+    int sum = 0;
+    for(int i = 1; i <= n; i++) {
+        sum += i;
+    }
+    return sum;
+}
+
+riscv64-unknown-elf-gcc -S -O0 -march=rv32i -mabi=ilp32 -o sample.s sample.c
+
+int calc(int n) {
+  ...
+  return sum;
+}
+
